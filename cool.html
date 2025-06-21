@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GeoStatify</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="text-white min-h-screen p-5">
+    <div class="w-full max-w-6xl mx-auto">
+      <div class="text-center mb-8">
+        <h1
+          class="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text"
+        >
+          GeoStatify
+        </h1>
+        <p class="text-gray-400">
+          Discover and compare countries around the world
+        </p>
+      </div>
+
+      <div class="glass-effect rounded-xl p-6 mb-8">
+        <div class="flex flex-col md:flex-row gap-4 mb-4">
+          <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-300 mb-2"
+              >First Country</label
+            >
+            <div class="relative">
+              <input
+                type="text"
+                id="country1"
+                placeholder="Enter country name"
+                class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                autocomplete="off"
+              />
+              <div
+                id="suggestions1"
+                class="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg hidden max-h-60 overflow-y-auto"
+              ></div>
+            </div>
+          </div>
+          <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-300 mb-2"
+              >Second Country</label
+            >
+            <div class="relative">
+              <input
+                type="text"
+                id="country2"
+                placeholder="Enter country name"
+                class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                autocomplete="off"
+              />
+              <div
+                id="suggestions2"
+                class="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg hidden max-h-60 overflow-y-auto"
+              ></div>
+            </div>
+          </div>
+        </div>
+        <button
+          onclick="compareCountries()"
+          class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-all transform hover:scale-[1.02]"
+        >
+          Compare Countries
+        </button>
+      </div>
+
+      <div id="result" class="animate-fade-in"></div>
+    </div>
+
+    <script>
+      let allCountries = [];
+      let lastComparisonData = null;
+
+      // Common greetings in different languages
+      const greetings = {
+        eng: "Hello, How are you?",
+        fra: "Bonjour, Comment allez-vous?",
+        spa: "¡Hola, ¿Cómo estás?",
+        deu: "Hallo, Wie geht es dir?",
+        ita: "Ciao, Come stai?",
+        por: "Olá, Como vai você?",
+        rus: "Привет, Как дела?",
+        zho: "你好，你好吗？",
+        jpn: "こんにちは、お元気ですか？",
+        kor: "안녕하세요, 어떻게 지내세요?",
+        ara: "مرحبا، كيف حالك؟",
+        hin: "नमस्ते, आप कैसे हैं?",
+        ben: "নমস্কার, আপনি কেমন আছেন?",
+        tur: "Merhaba, Nasılsın?",
+        vie: "Xin chào, Bạn khỏe không?",
+        tha: "สวัสดี, สบายดีไหม?",
+        nld: "Hallo, Hoe gaat het?",
+        pol: "Cześć, Jak się masz?",
+        ukr: "Привіт, Як справи?",
+        grc: "Γεια σας, Πώς είστε;",
+        heb: "שלום, מה שלומך?",
+        swe: "Hej, Hur mår du?",
+        dan: "Hej, Hvordan har du det?",
+        fin: "Hei, Mitä kuuluu?",
+        nor: "Hei, Hvordan har du det?",
+        hun: "Szia, Hogy vagy?",
+        ces: "Ahoj, Jak se máš?",
+        ron: "Bună, Ce mai faci?",
+        bul: "Здравейте, Как сте?",
+        hrv: "Pozdrav, Kako si?",
+        cat: "Hola, Com estàs?",
+        fil: "Kamusta, Kumusta ka?",
+        est: "Tere, Kuidas läheb?",
+        lav: "Sveiki, Kā iet?",
+        lit: "Sveiki, Kaip sekasi?",
+        slk: "Ahoj, Ako sa máš?",
+        slv: "Pozdravljeni, Kako si?",
+        ell: "Γεια σας, Πώς είστε;",
+        mal: "നമസ്കാരം, എങ്ങനെ ഉണ്ട്?",
+        mar: "नमस्कार, तुम्ही कसे आहात?",
+        tam: "வணக்கம், எப்படி இருக்கிறீர்கள்?",
+        tel: "నమస్కారం, మీరు ఎలా ఉన్నారు?",
+        kan: "ನಮಸ್ಕಾರ, ಹೇಗಿದ್ದೀರಾ?",
+        urd: "سلام، آپ کیسے ہیں؟",
+        pan: "ਸਤ ਸ੍ਰੀ ਅਕਾਲ, ਤੁਸੀਂ ਕਿਵੇਂ ਹੋ?",
+        guj: "નમસ્તે, તમે કેવા છો?",
+        mya: "မင်္ဂလာပါ, ဘယ်လိုရှိပါသလဲ?",
+        sin: "ආයුබෝවන්, ඔබට කොහොමද?",
+        khm: "សួស្តី, អ្នកសុខសប្បាយទេ?",
+        lao: "ສະບາຍດີ, ສະບາຍດີບໍ?",
+        mon: "မင်္ဂလာပါ, ဘယ်လိုရှိပါသလဲ?",
+        glg: "Ola, Como estás?",
+        eus: "Kaixo, Zer moduz?",
+        isl: "Halló, Hvernig hefur þú það?",
+        mkd: "Здраво, Како си?",
+        ind: "Halo, Apa kabar?",
+        msa: "Halo, Apa khabar?",
+        tgl: "Kamusta, Kumusta ka?",
+        nep: "नमस्ते, तपाईं कस्तो हुनुहुन्छ?",
+        snd: "سلام، تون ڪيئن آهين؟",
+        kur: "سڵاو, چۆنی?",
+        kaz: "Сәлем, Қалың қалай?",
+        kir: "Салам, Кандайсың?",
+        tgk: "Салом, Чӣ хел?",
+        tuk: "Salam, Näme ýagşy?",
+        uig: "ياخشىمۇسىز، قانداق ئەھۋالىڭىز؟",
+        uzb: "Salom, Qalaysiz?",
+        tat: "Сәлам, Ничек яшисез?",
+        bak: "Һаумыһығыҙ, Ҡайһылайһығыҙ?",
+        dzo: "བཀྲ་ཤིས་བདེ་ལེགས།, ཁྱེད་རང་སྐུ་གཇུགས་བདེ་པོ་ཡོད་དམ?",
+        bod: "བཀྲ་ཤིས་བདེ་ལེགས།, ཁྱེད་རང་སྐུ་གཇུགས་བདེ་པོ་ཡོད་དམ?",
+        tib: "བཀྲ་ཤིས་བདེ་ལེགས།, ཁྱེད་རང་སྐུ་གཇུགས་བདེ་པོ་ཡོད་དམ?",
+        myv: "Шумбрат, Кодамо?",
+        che: "Маршалла ду хьоьгIаш?",
+        abk: "Бзиа убааит, Уара убааит?",
+        aar: "Akkam, Akkam jirta?",
+        afr: "Hallo, Hoe gaan dit?",
+        aka: "Akwaaba, Wo ho te sɛn?",
+        sqi: "Përshëndetje, Si jeni?",
+        amh: "ሰላም, እንደምን አለህ?",
+        arg: "Hola, Com ye?",
+        hye: "Բարև, Ինչպես ես?",
+        asm: "নমস্কাৰ, আপুনি কেনেকৈ আছে?",
+        ava: "ВорчIами, Щиб хIалтIизе?",
+        aym: "Kamisaki, Kamisaki?",
+        aze: "Salam, Necəsən?",
+        bam: "I ni ce, I ka kɛnɛ wa?",
+        bak: "Һаумыһығыҙ, Ҡайһылайһығыҙ?",
+        eus: "Kaixo, Zer moduz?",
+        bel: "Прывітанне, Як справы?",
+        ben: "নমস্কার, আপনি কেমন আছেন?",
+        bih: "नमस्कार, कैसे हो?",
+        bis: "Halo, Yu stap gud?",
+        bos: "Zdravo, Kako si?",
+        bre: "Demat, Penaos emañ kont ganeoc'h?",
+        bug: "Salamakki, Apa kareba?",
+        bul: "Здравейте, Как сте?",
+        mya: "မင်္ဂလာပါ, ဘယ်လိုရှိပါသလဲ?",
+        cat: "Hola, Com estàs?",
+        ceb: "Maayong buntag, Kumusta ka?",
+        cha: "Håfa adai, Håfa tatatmanu hao?",
+        che: "Маршалла ду хьоьгIаш?",
+        nya: "Moni, Muli bwanji?",
+        zho: "你好，你好吗？",
+        cos: "Bonghjornu, Cumu stai?",
+        hrv: "Pozdrav, Kako si?",
+        ces: "Ahoj, Jak se máš?",
+        dan: "Hej, Hvordan har du det?",
+        div: "އައްސަލާމްޢަލައިކުމް, ކިހިނެއްތޯ?",
+        nld: "Hallo, Hoe gaat het?",
+        dzo: "བཀྲ་ཤིས་བདེ་ལེགས།, ཁྱེད་རང་སྐུ་གཇུགས་བདེ་པོ་ཡོད་དམ?",
+        eng: "Hello, How are you?",
+        epo: "Saluton, Kiel vi fartas?",
+        est: "Tere, Kuidas läheb?",
+        ewe: "Ndi, Ale o?",
+        fao: "Hey, Hvussu gongur?",
+        fij: "Bula, Moce mada?",
+        fin: "Hei, Mitä kuuluu?",
+        fra: "Bonjour, Comment allez-vous?",
+        fry: "Hoi, Hoe giet it?",
+        ful: "A jaraama, A jaraama?",
+        glg: "Ola, Como estás?",
+        lug: "Oli otya, Oli otya?",
+        kat: "გამარჯობა, როგორ ხართ?",
+        deu: "Hallo, Wie geht es dir?",
+        ell: "Γεια σας, Πώς είστε;",
+        grn: "Mba'éichapa, Mba'éichapa reiko?",
+        guj: "નમસ્તે, તમે કેવા છો?",
+        hat: "Bonjou, Kijan ou ye?",
+        hau: "Sannu, Yaya kake?",
+        haw: "Aloha, Pehea 'oe?",
+        heb: "שלום, מה שלומך?",
+        hin: "नमस्ते, आप कैसे हैं?",
+        hmo: "Gude, Yu stap gut?",
+        hun: "Szia, Hogy vagy?",
+        isl: "Halló, Hvernig hefur þú það?",
+        ibo: "Ndewo, Kedu ka ị mere?",
+        ind: "Halo, Apa kabar?",
+        ile: "Saluton, Kiel vi fartas?",
+        gle: "Dia duit, Conas atá tú?",
+        ita: "Ciao, Come stai?",
+        jpn: "こんにちは、お元気ですか？",
+        jav: "Sugeng rawuh, Piye kabare?",
+        kan: "ನಮಸ್ಕಾರ, ಹೇಗಿದ್ದೀರಾ?",
+        kau: "Barka, Yaya kake?",
+        kaz: "Сәлем, Қалың қалай?",
+        khm: "សួស្តី, អ្នកសុខសប្បាយទេ?",
+        kin: "Muraho, Mumeze mute?",
+        run: "Mwaramutse, Mumeze mute?",
+        kir: "Салам, Кандайсың?",
+        kom: "Сэридз, Кыдз велӧд?",
+        kon: "Mbote, Ozali malamu?",
+        kor: "안녕하세요, 어떻게 지내세요?",
+        kur: "سڵاو, چۆنی?",
+        kua: "Mwa tjii, Wa uhara pene?",
+        lat: "Salve, Quid agis?",
+        ltz: "Moien, Wéi geet et?",
+        lub: "Mbote, Ozali malamu?",
+        lug: "Oli otya, Oli otya?",
+        lim: "Hallo, Wie geit 't?",
+        lin: "Mbote, Ozali malamu?",
+        lao: "ສະບາຍດີ, ສະບາຍດີບໍ?",
+        lit: "Sveiki, Kaip sekasi?",
+        lua: "Mbote, Ozali malamu?",
+        lav: "Sveiki, Kā iet?",
+        glv: "Moghrey mie, Kys t'ou?",
+        mkd: "Здраво, Како си?",
+        mlg: "Manahoana, Fahasalamana?",
+        msa: "Halo, Apa khabar?",
+        mal: "നമസ്കാരം, എങ്ങനെ ഉണ്ട്?",
+        mlt: "Bongu, Kif int?",
+        mri: "Kia ora, Kei te pēhea koe?",
+        mar: "नमस्कार, तुम्ही कसे आहात?",
+        mah: "Kia orana, Pe'ea koe?",
+        mon: "Сайн байна уу, Сайн байна уу?",
+        nau: "Talofa, Pehea koe?",
+        nav: "Yá'át'ééh, Ha'át'ííshą'?",
+        nde: "Mhoroi, Wakadini?",
+        nbl: "Sawubona, Unjani?",
+        ndo: "Wa uhara pene, Wa uhara pene?",
+        nep: "नमस्ते, तपाईं कस्तो हुनुहुन्छ?",
+        niu: "Fakaalofa lahi atu, Malo e lelei?",
+        nno: "Hei, Korleis har du det?",
+        nob: "Hei, Hvordan har du det?",
+        nor: "Hei, Hvordan har du det?",
+        iii: "ꋬꂻꈨꅪ, ꆏꈀꄸꀋꀀ?",
+        nso: "Dumela, O phela jwang?",
+        oci: "Bonjorn, Coma anatz?",
+        oji: "Boozhoo, Aaniin ezhi-ayaayan?",
+        ori: "ନମସ୍କାର, ଆପଣ କେମିତି ଅଛନ୍ତି?",
+        orm: "Akkam, Akkam jirta?",
+        oss: "Салам, Куыд у?",
+        pan: "ਸਤ ਸ੍ਰੀ ਅਕਾਲ, ਤੁਸੀਂ ਕਿਵੇਂ ਹੋ?",
+        pli: "नमो तस्स, कथं त्वं?",
+        pol: "Cześć, Jak się masz?",
+        pus: "سلام, څنګه یې?",
+        por: "Olá, Como vai você?",
+        que: "Rimaykullayki, Imaynallam?",
+        roh: "Bun di, Co vai?",
+        run: "Muraho, Mumeze mute?",
+        ron: "Bună, Ce mai faci?",
+        rus: "Привет, Как дела?",
+        smo: "Talofa, O a mai oe?",
+        sag: "Balaô, Mo yê nî?",
+        san: "नमस्ते, कथं त्वं?",
+        srd: "Bona die, Comente ses?",
+        snd: "سلام، تون ڪيئن آهين؟",
+        sin: "ආයුබෝවන්, ඔබට කොහොමද?",
+        slk: "Ahoj, Ako sa máš?",
+        slv: "Pozdravljeni, Kako si?",
+        som: "Salaam, Sidee tahay?",
+        sot: "Lumela, U phela joang?",
+        spa: "¡Hola, ¿Cómo estás?",
+        sun: "Sampurasun, Kumaha damang?",
+        swa: "Habari, Habari yako?",
+        swe: "Hej, Hur mår du?",
+        tgl: "Kamusta, Kumusta ka?",
+        tah: "Ia orana, E aha te huru?",
+        tgk: "Салом, Чӣ хел?",
+        tam: "வணக்கம், எப்படி இருக்கிறீர்கள்?",
+        tat: "Сәлам, Ничек яшисез?",
+        tel: "నమస్కారం, మీరు ఎలా ఉన్నారు?",
+        tha: "สวัสดี, สบายดีไหม?",
+        bod: "བཀྲ་ཤིས་བདེ་ལེགས།, ཁྱེད་རང་སྐུ་གཇུགས་བདེ་པོ་ཡོད་དམ?",
+        tir: "ሰላም, እንደምን አለህ?",
+        ton: "Mālō e lelei, Fēfē hake?",
+        tso: "Avuxeni, Ku njhani?",
+        tsn: "Dumela, O tsogile jang?",
+        tur: "Merhaba, Nasılsın?",
+        tuk: "Salam, Näme ýagşy?",
+        twi: "Akwaaba, Wo ho te sɛn?",
+        uig: "ياخشىمۇسىز، قانداق ئەھۋالىڭىز؟",
+        ukr: "Привіт, Як справи?",
+        urd: "سلام، آپ کیسے ہیں؟",
+        uzb: "Salom, Qalaysiz?",
+        ven: "Ndaa, Vho vuwa hani?",
+        vie: "Xin chào, Bạn khỏe không?",
+        vol: "Glidis, Li binons?",
+        wln: "Bondjoû, Comint vs va?",
+        cym: "Helo, Sut wyt ti?",
+        fry: "Hoi, Hoe giet it?",
+        wol: "Salamalekum, Na nga def?",
+        xho: "Molo, Unjani?",
+        yid: "שלום, ווי גייט עס?",
+        yor: "Bawo, Bawo ni?",
+        zha: "Mengz nyob zoo, Mengz nyob zoo?",
+        zul: "Sawubona, Unjani?",
+        prs: "سلام، چطور هستید؟",
+      };
+
+      // Fetch all countries when the page loads
+      async function fetchAllCountries() {
+        try {
+          const response = await fetch(
+            "https://restcountries.com/v3.1/all?fields=name,cca3"
+          );
+          const data = await response.json();
+          allCountries = data
+            .map((country) => ({
+              name: country.name.common,
+              official: country.name.official,
+              cca3: country.cca3, // Add the ISO 3-letter code
+            }))
+            .sort((a, b) => a.name.localeCompare(b.name));
+        } catch (error) {
+          console.error("Error fetching countries:", error);
+        }
+      }
+
+      // Initialize the page
+      document.addEventListener("DOMContentLoaded", async () => {
+        await fetchAllCountries(); // Wait for countries to load
+        setupAutocomplete("country1", "suggestions1");
+        setupAutocomplete("country2", "suggestions2");
+      });
+
+      function setupAutocomplete(inputId, suggestionsId) {
+        const input = document.getElementById(inputId);
+        const suggestions = document.getElementById(suggestionsId);
+
+        input.addEventListener("input", (e) => {
+          const value = e.target.value.toLowerCase();
+          if (value.length < 1) {
+            suggestions.classList.add("hidden");
+            return;
+          }
+
+          // Improved search logic
+          const filteredCountries = allCountries
+            .filter((country) => {
+              const searchTerms = value.split(" ");
+              return searchTerms.every(
+                (term) =>
+                  country.name.toLowerCase().includes(term) ||
+                  country.official.toLowerCase().includes(term) ||
+                  // Add common variations and abbreviations
+                  (country.name.toLowerCase().startsWith(term) &&
+                    term.length > 1) ||
+                  (country.official.toLowerCase().startsWith(term) &&
+                    term.length > 1)
+              );
+            })
+            .slice(0, 10); // Limit to 10 results for better performance
+
+          if (filteredCountries.length > 0) {
+            suggestions.innerHTML = filteredCountries
+              .map(
+                (country) => `
+                      <div class="p-2 hover:bg-gray-700 cursor-pointer">
+                        <div class="font-medium">${country.name}</div>
+                        <div class="text-sm text-gray-400">${country.official}</div>
+                      </div>
+                    `
+              )
+              .join("");
+            suggestions.classList.remove("hidden");
+          } else {
+            suggestions.classList.add("hidden");
+          }
+        });
+
+        // Handle suggestion click
+        suggestions.addEventListener("click", (e) => {
+          const countryDiv = e.target.closest(".p-2");
+          if (countryDiv) {
+            const countryName =
+              countryDiv.querySelector(".font-medium").textContent;
+            input.value = countryName;
+            suggestions.classList.add("hidden");
+            // Trigger the compare if both inputs are filled
+            if (
+              document.getElementById("country1").value &&
+              document.getElementById("country2").value
+            ) {
+              compareCountries();
+            }
+          }
+        });
+
+        // Hide suggestions when clicking outside
+        document.addEventListener("click", (e) => {
+          if (!input.contains(e.target) && !suggestions.contains(e.target)) {
+            suggestions.classList.add("hidden");
+          }
+        });
+      }
+
+      async function fetchCountryData(country) {
+        try {
+          console.log(`Fetching data for: ${country}`);
+          const res = await fetch(
+            `https://restcountries.com/v3.1/name/${encodeURIComponent(country)}`
+          );
+          console.log("Response status:", res.status);
+
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+
+          const data = await res.json();
+          console.log("Received data:", data);
+
+          if (!data || data.length === 0) {
+            throw new Error(`No data found for ${country}`);
+          }
+
+          return data[0];
+        } catch (error) {
+          console.error("Error in fetchCountryData:", error);
+          throw new Error(
+            `Error fetching data for ${country}: ${error.message}`
+          );
+        }
+      }
+
+      function formatNumber(num) {
+        return new Intl.NumberFormat().format(num);
+      }
+
+      function getLargestCountry(country1, country2) {
+        return country1.area > country2.area ? country1 : country2;
+      }
+
+      async function compareCountries() {
+        const country1Input = document.getElementById("country1").value.trim();
+        const country2Input = document.getElementById("country2").value.trim();
+        const resultDiv = document.getElementById("result");
+
+        console.log("Comparing countries:", country1Input, country2Input);
+
+        if (!country1Input || !country2Input) {
+          resultDiv.innerHTML =
+            '<div class="text-red-500 text-center">Please enter both country names</div>';
+          return;
+        }
+
+        resultDiv.innerHTML =
+          '<div class="text-center"><div class="loading-spinner"></div></div>';
+
+        try {
+          console.log("Starting API calls...");
+          const [data1, data2] = await Promise.all([
+            fetchCountryData(country1Input),
+            fetchCountryData(country2Input),
+          ]);
+          console.log("API calls successful:", data1, data2);
+
+          // Store the data for copying
+          lastComparisonData = { data1, data2 };
+
+          const largestCountry = getLargestCountry(data1, data2);
+          const areaRatio =
+            (Math.min(data1.area, data2.area) /
+              Math.max(data1.area, data2.area)) *
+            100;
+
+          resultDiv.innerHTML = `
+                  <div class="glass-effect rounded-xl p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div class="space-y-4 country-card">
+                        <div class="flex items-center justify-between">
+                          <h2 class="text-2xl font-bold">${
+                            data1.name.common
+                          }</h2>
+                          <span class="text-sm text-gray-400">${
+                            data1.name.official
+                          }</span>
+                        </div>
+                        <img src="${
+                          data1.flags.svg
+                        }" class="w-full h-48 object-cover rounded-lg shadow-lg flag-image" />
+                        <div class="grid grid-cols-2 gap-4">
+                          <div class="glass-effect p-4 rounded-lg">
+                            <p class="text-sm text-gray-400">Capital</p>
+                            <p class="font-semibold">${
+                              data1.capital ? data1.capital[0] : "N/A"
+                            }</p>
+                          </div>
+                          <div class="glass-effect p-4 rounded-lg">
+                            <p class="text-sm text-gray-400">Population</p>
+                            <p class="font-semibold">${formatNumber(
+                              data1.population
+                            )}</p>
+                          </div>
+                          <div class="glass-effect p-4 rounded-lg">
+                            <p class="text-sm text-gray-400">Area</p>
+                            <p class="font-semibold">${formatNumber(
+                              data1.area
+                            )} km²</p>
+                          </div>
+                          <div class="glass-effect p-4 rounded-lg">
+                            <p class="text-sm text-gray-400">Region</p>
+                            <p class="font-semibold">${data1.region}</p>
+                          </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                          <div class="glass-effect p-4 rounded-lg">
+                            <p class="text-sm text-gray-400 mb-2">Languages</p>
+                            <div class="flex flex-wrap gap-2">
+                              ${Object.entries(data1.languages || {})
+                                .map(
+                                  ([code, lang]) =>
+                                    `<span class="px-2 py-1 bg-blue-500/20 rounded-full text-sm language-tag">${lang}</span>`
+                                )
+                                .join("")}
+                            </div>
+                          </div>
+                          <div class="glass-effect p-4 rounded-lg">
+                            <p class="text-sm text-gray-400 mb-2">Greetings: Hello, how are you?</p>
+                            <div class="flex flex-col gap-2">
+                              ${Object.entries(data1.languages || {})
+                                .map(
+                                  ([code, lang]) =>
+                                    `<div class="flex flex-col">
+                                      <span class="text-xs text-gray-400">${lang}:</span>
+                                      <span class="text-sm">${getGreeting(
+                                        code
+                                      )}</span>
+                                    </div>`
+                                )
+                                .join("")}
+                            </div>
+                          </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                          <div class="glass-effect p-4 rounded-lg">
+                            <p class="text-sm text-gray-400 mb-2">Bordering Countries</p>
+                            <div class="flex flex-wrap gap-2">
+                              ${
+                                data1.borders && data1.borders.length > 0
+                                  ? data1.borders
+                                      .map(
+                                        (code) =>
+                                          `<div class="group relative">
+                                            <button onclick="selectCountry('${code}')" class="px-2 py-1 bg-purple-500/20 rounded-full text-sm hover:bg-purple-500/30 transition-colors border-tag">${code}</button>
+                                            <div class="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded-lg shadow-lg whitespace-nowrap">
+                                              ${
+                                                allCountries.find(
+                                                  (c) => c.cca3 === code
+                                                )?.name || code
+                                              }
+                                            </div>
+                                          </div>`
+                                      )
+                                      .join("")
+                                  : '<span class="text-sm text-gray-400">No land borders</span>'
+                              }
+                            </div>
+                          </div>
+                          <div class="glass-effect p-4 rounded-lg">
+                            <div class="space-y-2">
+                              <h3 class="text-sm font-medium text-gray-300">Currencies</h3>
+                              <div class="flex flex-wrap gap-2">
+                                ${Object.entries(data1.currencies)
+                                  .map(
+                                    ([code, currency]) =>
+                                      `<div class="px-2 py-1 bg-blue-500/20 rounded-full text-sm border-tag">
+                                        ${currency.name} (${currency.symbol})
+                                      </div>`
+                                  )
+                                  .join("")}
+                              </div>
+                              <div class="mt-2">
+                                <div class="flex gap-2 items-center">
+                                  <input type="number" 
+                                         id="currency1-amount" 
+                                         class="w-20 px-2 py-1 bg-gray-800/50 rounded text-sm text-white border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                                         placeholder="Amount"
+                                         min="0"
+                                         step="0.01">
+                                  <select id="currency1-select" 
+                                          class="w-16 px-1 py-1 bg-gray-800/50 rounded text-sm text-white border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                                    ${Object.entries(data1.currencies)
+                                      .map(
+                                        ([code, currency]) =>
+                                          `<option value="${code}">${code}</option>`
+                                      )
+                                      .join("")}
+                                  </select>
+                                  <button onclick="convertCurrency(1)" 
+                                          class="px-2 py-1 bg-blue-500/20 rounded text-sm hover:bg-blue-500/30 transition-colors">
+                                    →
+                                  </button>
+                                </div>
+                                <div id="currency1-result" class="mt-1 text-sm text-gray-400"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="space-y-4 country-card">
+                        <div class="flex items-center justify-between">
+                          <h2 class="text-2xl font-bold">${
+                            data2.name.common
+                          }</h2>
+                          <span class="text-sm text-gray-400">${
+                            data2.name.official
+                          }</span>
+                        </div>
+                        <img src="${
+                          data2.flags.svg
+                        }" class="w-full h-48 object-cover rounded-lg shadow-lg flag-image" />
+                        <div class="grid grid-cols-2 gap-4">
+                          <div class="glass-effect p-4 rounded-lg">
+                            <p class="text-sm text-gray-400">Capital</p>
+                            <p class="font-semibold">${
+                              data2.capital ? data2.capital[0] : "N/A"
+                            }</p>
+                          </div>
+                          <div class="glass-effect p-4 rounded-lg">
+                            <p class="text-sm text-gray-400">Population</p>
+                            <p class="font-semibold">${formatNumber(
+                              data2.population
+                            )}</p>
+                          </div>
+                          <div class="glass-effect p-4 rounded-lg">
+                            <p class="text-sm text-gray-400">Area</p>
+                            <p class="font-semibold">${formatNumber(
+                              data2.area
+                            )} km²</p>
+                          </div>
+                          <div class="glass-effect p-4 rounded-lg">
+                            <p class="text-sm text-gray-400">Region</p>
+                            <p class="font-semibold">${data2.region}</p>
+                          </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                          <div class="glass-effect p-4 rounded-lg">
+                            <p class="text-sm text-gray-400 mb-2">Languages</p>
+                            <div class="flex flex-wrap gap-2">
+                              ${Object.entries(data2.languages || {})
+                                .map(
+                                  ([code, lang]) =>
+                                    `<span class="px-2 py-1 bg-blue-500/20 rounded-full text-sm language-tag">${lang}</span>`
+                                )
+                                .join("")}
+                            </div>
+                          </div>
+                          <div class="glass-effect p-4 rounded-lg">
+                            <p class="text-sm text-gray-400 mb-2">Greetings: Hello, how are you?</p>
+                            <div class="flex flex-col gap-2">
+                              ${Object.entries(data2.languages || {})
+                                .map(
+                                  ([code, lang]) =>
+                                    `<div class="flex flex-col">
+                                      <span class="text-xs text-gray-400">${lang}:</span>
+                                      <span class="text-sm">${getGreeting(
+                                        code
+                                      )}</span>
+                                    </div>`
+                                )
+                                .join("")}
+                            </div>
+                          </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                          <div class="glass-effect p-4 rounded-lg">
+                            <p class="text-sm text-gray-400 mb-2">Bordering Countries</p>
+                            <div class="flex flex-wrap gap-2">
+                              ${
+                                data2.borders && data2.borders.length > 0
+                                  ? data2.borders
+                                      .map(
+                                        (code) =>
+                                          `<div class="group relative">
+                                            <button onclick="selectCountry('${code}')" class="px-2 py-1 bg-purple-500/20 rounded-full text-sm hover:bg-purple-500/30 transition-colors border-tag">${code}</button>
+                                            <div class="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded-lg shadow-lg whitespace-nowrap">
+                                              ${
+                                                allCountries.find(
+                                                  (c) => c.cca3 === code
+                                                )?.name || code
+                                              }
+                                            </div>
+                                          </div>`
+                                      )
+                                      .join("")
+                                  : '<span class="text-sm text-gray-400">No land borders</span>'
+                              }
+                            </div>
+                          </div>
+                          <div class="glass-effect p-4 rounded-lg">
+                            <div class="space-y-2">
+                              <h3 class="text-sm font-medium text-gray-300">Currencies</h3>
+                              <div class="flex flex-wrap gap-2">
+                                ${Object.entries(data2.currencies)
+                                  .map(
+                                    ([code, currency]) =>
+                                      `<div class="px-2 py-1 bg-blue-500/20 rounded-full text-sm border-tag">
+                                        ${currency.name} (${currency.symbol})
+                                      </div>`
+                                  )
+                                  .join("")}
+                              </div>
+                              <div class="mt-2">
+                                <div class="flex gap-2 items-center">
+                                  <input type="number" 
+                                         id="currency2-amount" 
+                                         class="w-20 px-2 py-1 bg-gray-800/50 rounded text-sm text-white border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                                         placeholder="Amount"
+                                         min="0"
+                                         step="0.01">
+                                  <select id="currency2-select" 
+                                          class="w-16 px-1 py-1 bg-gray-800/50 rounded text-sm text-white border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                                    ${Object.entries(data2.currencies)
+                                      .map(
+                                        ([code, currency]) =>
+                                          `<option value="${code}">${code}</option>`
+                                      )
+                                      .join("")}
+                                  </select>
+                                  <button onclick="convertCurrency(2)" 
+                                          class="px-2 py-1 bg-blue-500/20 rounded text-sm hover:bg-blue-500/30 transition-colors">
+                                    →
+                                  </button>
+                                </div>
+                                <div id="currency2-result" class="mt-1 text-sm text-gray-400"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="mt-8 glass-effect p-6 rounded-lg">
+                      <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold">Comparison Insights</h3>
+                        <button
+                          onclick="copyComparisonData()"
+                          class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                            <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                          </svg>
+                          Copy Data
+                        </button>
+                      </div>
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <p class="text-sm text-gray-400">Population Difference</p>
+                          <p class="font-semibold">${formatNumber(
+                            Math.abs(data1.population - data2.population)
+                          )} people</p>
+                        </div>
+                        <div>
+                          <p class="text-sm text-gray-400">Area Ratio</p>
+                          <p class="font-semibold">${areaRatio.toFixed(1)}%</p>
+                        </div>
+                        <div>
+                          <p class="text-sm text-gray-400">Larger Country</p>
+                          <p class="font-semibold">${
+                            largestCountry.name.common
+                          }</p>
+                        </div>
+                        <div>
+                          <p class="text-sm text-gray-400">More Populous</p>
+                          <p class="font-semibold">${
+                            data1.population > data2.population
+                              ? data1.name.common
+                              : data2.name.common
+                          }</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>`;
+        } catch (error) {
+          resultDiv.innerHTML = `
+                  <div class="glass-effect p-6 rounded-lg text-center">
+                    <div class="text-red-500 text-xl mb-2">Error</div>
+                    <p class="text-gray-400">${error.message}</p>
+                  </div>`;
+        }
+      }
+
+      function formatComparisonData(data1, data2) {
+        const largestCountry = getLargestCountry(data1, data2);
+        const areaRatio =
+          (Math.min(data1.area, data2.area) /
+            Math.max(data1.area, data2.area)) *
+          100;
+
+        return `Country Comparison: ${data1.name.common} vs ${data2.name.common}
+
+${data1.name.common}:
+• Official Name: ${data1.name.official}
+• Capital: ${data1.capital ? data1.capital[0] : "N/A"}
+• Population: ${formatNumber(data1.population)}
+• Area: ${formatNumber(data1.area)} km²
+• Region: ${data1.region}
+• Languages: ${Object.entries(data1.languages || {})
+          .map(
+            ([code, lang]) =>
+              `${lang} (${getGreeting(code)} - Hello, How are you?)`
+          )
+          .join("\n  ")}
+• Currencies: ${Object.entries(data1.currencies || {})
+          .map(([code, currency]) => `${currency.name} (${currency.symbol})`)
+          .join(", ")}
+• Bordering Countries: ${
+          data1.borders && data1.borders.length > 0
+            ? data1.borders
+                .map(
+                  (code) =>
+                    allCountries.find((c) => c.cca3 === code)?.name || code
+                )
+                .join(", ")
+            : "No land borders"
+        }
+
+${data2.name.common}:
+• Official Name: ${data2.name.official}
+• Capital: ${data2.capital ? data2.capital[0] : "N/A"}
+• Population: ${formatNumber(data2.population)}
+• Area: ${formatNumber(data2.area)} km²
+• Region: ${data2.region}
+• Languages: ${Object.entries(data2.languages || {})
+          .map(
+            ([code, lang]) =>
+              `${lang} (${getGreeting(code)} - Hello, How are you?)`
+          )
+          .join("\n  ")}
+• Currencies: ${Object.entries(data2.currencies || {})
+          .map(([code, currency]) => `${currency.name} (${currency.symbol})`)
+          .join(", ")}
+• Bordering Countries: ${
+          data2.borders && data2.borders.length > 0
+            ? data2.borders
+                .map(
+                  (code) =>
+                    allCountries.find((c) => c.cca3 === code)?.name || code
+                )
+                .join(", ")
+            : "No land borders"
+        }
+
+Comparison Insights:
+• Population Difference: ${formatNumber(
+          Math.abs(data1.population - data2.population)
+        )} people
+• Area Ratio: ${areaRatio.toFixed(1)}%
+• Larger Country: ${largestCountry.name.common}
+• More Populous: ${
+          data1.population > data2.population
+            ? data1.name.common
+            : data2.name.common
+        }`;
+      }
+
+      async function copyComparisonData() {
+        if (!lastComparisonData) {
+          alert("Please compare countries first");
+          return;
+        }
+
+        try {
+          const { data1, data2 } = lastComparisonData;
+          const formattedData = formatComparisonData(data1, data2);
+          await navigator.clipboard.writeText(formattedData);
+
+          // Show success message
+          const button = document.querySelector(
+            'button[onclick="copyComparisonData()"]'
+          );
+          const originalText = button.innerHTML;
+          button.innerHTML = `
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  Copied!
+                `;
+
+          setTimeout(() => {
+            button.innerHTML = originalText;
+          }, 2000);
+        } catch (error) {
+          alert("Error copying data: " + error.message);
+        }
+      }
+
+      function getGreeting(langCode) {
+        return greetings[langCode.toLowerCase()] || "Hello, How are you?";
+      }
+
+      // Add this new function for currency conversion
+      async function convertCurrency(countryNumber) {
+        const amount = document.getElementById(
+          `currency${countryNumber}-amount`
+        ).value;
+        const fromCurrency = document.getElementById(
+          `currency${countryNumber}-select`
+        ).value;
+        const resultDiv = document.getElementById(
+          `currency${countryNumber}-result`
+        );
+
+        if (!amount || amount <= 0) {
+          resultDiv.textContent = "Please enter a valid amount";
+          return;
+        }
+
+        try {
+          resultDiv.textContent = "Converting...";
+          const response = await fetch(
+            `https://api.exchangerate-api.com/v4/latest/${fromCurrency}`
+          );
+          const data = await response.json();
+
+          // Get the other country's currency
+          const otherCountryNumber = countryNumber === 1 ? 2 : 1;
+          const toCurrency = document.getElementById(
+            `currency${otherCountryNumber}-select`
+          ).value;
+
+          const rate = data.rates[toCurrency];
+          const convertedAmount = (amount * rate).toFixed(2);
+
+          resultDiv.textContent = `${amount} ${fromCurrency} = ${convertedAmount} ${toCurrency}`;
+        } catch (error) {
+          console.error("Error converting currency:", error);
+          resultDiv.textContent =
+            "Error converting currency. Please try again.";
+        }
+      }
+    </script>
+  </body>
+</html>
